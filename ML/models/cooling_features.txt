@@ -1,0 +1,6 @@
+vibration
+peak_vibration
+stable_vibration
+cooling_duration
+vibration_reduction
+avg_vibration

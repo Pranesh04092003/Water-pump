@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Motor Pattern Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Advanced Motor Pattern Analysis</h1>
+        
+        <!-- Usage Pattern Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Usage Pattern Analysis</h2>
+                <div class="mb-4">
+                    <canvas id="usageChart"></canvas>
+                </div>
+                <div class="text-center">
+                    <span id="usageStatus" class="text-lg font-medium"></span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Load Pattern Analysis</h2>
+                <div class="mb-4">
+                    <canvas id="loadChart"></canvas>
+                </div>
+                <div class="text-center">
+                    <span id="loadStatus" class="text-lg font-medium"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Optimization Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Speed Optimization</h2>
+                <div class="mb-4">
+                    <canvas id="speedChart"></canvas>
+                </div>
+                <div class="text-center">
+                    <span id="speedStatus" class="text-lg font-medium"></span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Start/Stop Analysis</h2>
+                <div class="mb-4">
+                    <canvas id="cycleChart"></canvas>
+                </div>
+                <div class="text-center">
+                    <span id="cycleStatus" class="text-lg font-medium"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Control Panel</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Update Interval</label>
+                    <select id="updateInterval" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="5000">5 seconds</option>
+                        <option value="10000">10 seconds</option>
+                        <option value="30000">30 seconds</option>
+                        <option value="60000">1 minute</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Auto Update</label>
+                    <button id="toggleUpdate" class="mt-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Pause Updates
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts with fixed data
+        const usageChart = new Chart(document.getElementById('usageChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: 'Usage Pattern',
+                    data: Array.from({length: 24}, () => Math.random() * 0.5 + 0.3),
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1
+                    }
+                }
+            }
+        });
+
+        const loadChart = new Chart(document.getElementById('loadChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Light Load', 'Normal Load', 'Peak Load'],
+                datasets: [{
+                    data: [30, 50, 20],
+                    backgroundColor: [
+                        'rgb(75, 192, 192)',
+                        'rgb(255, 205, 86)',
+                        'rgb(255, 99, 132)'
+                    ]
+                }]
+            }
+        });
+
+        const speedChart = new Chart(document.getElementById('speedChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 10}, (_, i) => `${i + 1}min`),
+                datasets: [{
+                    label: 'Optimal Speed (RPM)',
+                    data: Array.from({length: 10}, () => Math.random() * 500 + 1500),
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1
+                }]
+            }
+        });
+
+        const cycleChart = new Chart(document.getElementById('cycleChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Normal', 'High'],
+                datasets: [{
+                    label: 'Start/Stop Frequency',
+                    data: [70, 30],
+                    backgroundColor: [
+                        'rgb(75, 192, 192)',
+                        'rgb(255, 99, 132)'
+                    ]
+                }]
+            }
+        });
+
+        let updateInterval = 5000;
+        let isUpdating = true;
+        let updateTimer = null;
+
+        // Function to update charts with more stable data
+        function updateCharts() {
+            if (!isUpdating) return;
+
+            // Update usage pattern with small variations
+            const currentHour = new Date().getHours();
+            const usageData = {
+                Hour: currentHour,
+                Day: new Date().getDay(),
+                Vibration_Level: 2500 + Math.random() * 500,
+                Usage_Frequency: 0.4 + Math.random() * 0.2
+            };
+
+            fetch('/predict_usage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(usageData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update only the current hour
+                usageChart.data.datasets[0].data[currentHour] = usageData.Usage_Frequency;
+                usageChart.update('none');
+                document.getElementById('usageStatus').textContent = `Current Pattern: ${data.Usage_Pattern}`;
+            });
+
+            // Update load pattern with stable distribution
+            const loadData = {
+                Vibration_Level: 2500 + Math.random() * 500,
+                Motor_Current: 5 + Math.random(),
+                Power_Consumption: 500 + Math.random() * 100
+            };
+
+            fetch('/predict_load', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loadData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadStatus').textContent = `Current Load: ${data.Load_Type}`;
+            });
+
+            // Update speed optimization with gradual changes
+            const speedData = {
+                Required_Flow_Rate: 50 + Math.random() * 10,
+                System_Pressure: 5 + Math.random(),
+                Power_Consumption: 500 + Math.random() * 100
+            };
+
+            fetch('/predict_speed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(speedData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Shift data points and add new one
+                speedChart.data.datasets[0].data.shift();
+                speedChart.data.datasets[0].data.push(data.Optimal_Speed);
+                speedChart.update('none');
+                document.getElementById('speedStatus').textContent = `Optimal Speed: ${Math.round(data.Optimal_Speed)} RPM`;
+            });
+
+            // Update cycle analysis with stable distribution
+            const cycleData = {
+                Vibration_Change: Math.random() * 100
+            };
+
+            fetch('/analyze_start_stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(cycleData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('cycleStatus').textContent = `Cycle Status: ${data.Start_Stop_Status}`;
+            });
+        }
+
+        // Control panel functionality
+        document.getElementById('updateInterval').addEventListener('change', function(e) {
+            updateInterval = parseInt(e.target.value);
+            if (isUpdating) {
+                clearInterval(updateTimer);
+                updateTimer = setInterval(updateCharts, updateInterval);
+            }
+        });
+
+        document.getElementById('toggleUpdate').addEventListener('click', function() {
+            isUpdating = !isUpdating;
+            this.textContent = isUpdating ? 'Pause Updates' : 'Resume Updates';
+            this.classList.toggle('bg-blue-500');
+            this.classList.toggle('bg-red-500');
+            
+            if (isUpdating) {
+                updateTimer = setInterval(updateCharts, updateInterval);
+            } else {
+                clearInterval(updateTimer);
+            }
+        });
+
+        // Initial update
+        updateCharts();
+        updateTimer = setInterval(updateCharts, updateInterval);
+    </script>
+</body>
+</html>
